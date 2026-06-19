@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberPuzzle</title>
+    <script src="chess.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="meta-info">
+        <h1 style="color: #ffffff;">CyberPuzzle</h1>
+        <h3 id="game-title" style="margin:0;">Loading</h3>
+        <div id="turn-indicator" style="color: #aaa; font-size: 0.9rem; margin-top:4px;">-</div>
+    </div>
+
+    <div class="workspace-container">
+        <div class="eval-bar-container">
+            <div id="eval-bar-fill" class="eval-bar-fill"></div>
+            <div id="eval-bar-text" class="eval-bar-text">0.0</div>
+        </div>
+        <div class="chessboard-wrapper">
+            <div class="chessboard" id="board"></div>
+            <div id="pieces-layer"></div>
+
+            <div id="promotion-modal" class="promotion-overlay">
+                <div class="promotion-box">
+                    <h4>Promote Pawn</h4>
+                    <div id="promotion-options"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-panel">
+            <div class="history-header">Move History</div>
+            <div class="history-moves-list" id="history-container"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <label class="custom-file-upload" style="background-color: #e63946; color: white; padding: 12px 20px; font-size: 0.95rem; cursor: pointer; border-radius: 5px; font-weight: bold; box-shadow: 0 4px 0 #b81d24; display: inline-flex; align-items: center; justify-content: center;">
+            Load Database
+            <input type="file" id="pgn-file-input" accept=".pgn" style="display: none;" onchange="handleDatabaseUpload(event)">
+        </label>
+        
+        <button onclick="resetBoard()">Reset Puzzle</button>
+        <button class="secondary" onclick="exportCurrentPGN()">Export PGN</button>
+        <button class="primary" onclick="loadNewPuzzle()">Next Puzzle</button>
+        
+        <div class="depth-selector-container">
+            <label for="depth-slider">Engine Depth: <span id="depth-value">16</span></label>
+            <div class="slider-wrapper">
+                <span class="depth-label-min">10</span>
+                <input type="range" id="depth-slider" min="10" max="22" value="16" step="1">
+                <span class="depth-label-max">22</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="stockfish-wrapper.js"></script>
+    <script src="puzzle-trainer.js"></script>
+</body>
+</html>
