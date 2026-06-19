@@ -552,8 +552,13 @@ function pushMoveToHistory(moveObj, badgeData = null) {
 function drawBoard() {
     renderBoardHTML();
     renderPieces();
+    setIndicator(`To Move: ${game.turn() === 'w' ? 'White' : 'Black'}`);
+}
+
+function setIndicator(str){
     const indicator = document.getElementById('turn-indicator');
-    indicator.textContent = `To Move: ${game.turn() === 'w' ? 'White' : 'Black'}`;
+    indicator.textContent = str;
+
 }
 
 // ======================================================
@@ -889,6 +894,7 @@ async function checkSavedDatabase() {
             findRandomPuzzle();
         } else {
             setGameTitle("Use [Load Database] to load puzzle source");
+            setIndicator("recommanded source: [https://database.nikonoel.fr/]")
             console.log("💾 [IndexedDB] Cache Empty. Awaiting manual PGN upload.");
         }
     };
