@@ -1,13 +1,8 @@
-/**
- * Positional Puzzle Trainer - Frontend Logic 
- * Features: Performance Engine Tuning, Arrow-Key Time Travel, Full Annotations, Dynamic Puzzle Finder
- */
-
 const boardElement = document.getElementById('board');
 const piecesLayer = document.getElementById('pieces-layer');
 const historyContainer = document.getElementById('history-container');
 
-let debug = true;
+let debug = false;
 
 // Evaluation queue
 let engineBusy = false;
@@ -156,6 +151,56 @@ function processEvaluationQueue() {
     engineWorker.postMessage(`go depth ${maxEngineDepth}`);
 }
 
+function getKingSquare(color) {
+    const board = game.board(); // Returns an 8x8 array
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+
+    for (let r = 0; r < 8; r++) {
+        for (let f = 0; f < 8; f++) {
+            const piece = board[r][f];
+            if (piece && piece.type === 'k' && piece.color === color) {
+                return files[f] + ranks[r]; // Returns square string like "e1" or "e8"
+            }
+        }
+    }
+    return null;
+}
+
+function checkGameEndFeedback() {
+    let kingSquare = null;
+    let icon = null;
+    let badgeType = "";
+
+    if (game.in_checkmate()) {
+        // The king whose turn it CURRENTLY is has been checkmated
+        console.log("detected mate")
+        let losingColor = game.turn(); 
+        kingSquare = getKingSquare(losingColor);
+        icon = accuracyIcons["Checkmate"]; // Or your custom image asset path/Unicode string
+        badgeType = "checkmate";
+    } 
+    else if (game.in_draw() || game.in_stalemate() || game.insufficient_material() || game.in_threefold_repetition()) {
+        console.log("detected draw")
+        let playerWhoJustMoved = (game.turn() === 'b') ? 'w' : 'b';
+        kingSquare = getKingSquare(playerWhoJustMoved);
+        icon = accuracyIcons["Draw"]; // Draw icon representation
+        badgeType = "draw";
+    } else {
+        return;
+    }
+
+    // If an endgame condition was met, save it to history so it stays when browsing
+    if (kingSquare && icon) {
+        squareBadge = { square: kingSquare, icon: icon, type: badgeType };
+        if (historyState[currentHistoryIndex]) {
+            historyState[currentHistoryIndex].badge = squareBadge;
+        }
+    }
+    // drawBoard();
+    // updateEvalBar();
+}
+
 let mate=0;
 
 function initEngine() {
@@ -190,6 +235,8 @@ function initEngine() {
         const line = event.data;
 
         if (debug) console.log("🤖 [ENGINE STDOUT]:", line);
+
+        //checkGameEndFeedback();
         
         // Handshake and tuning execution
         if (line === "readyok" || line === "uciok" || line.startsWith("Stockfish")) {
@@ -227,7 +274,7 @@ function initEngine() {
                 }
             }
 
-            console.log("score: "+score)
+            if (debug) console.log("score: "+score);
 
             let pvIndex = matchPv ? parseInt(matchPv[1]) : 1;
             currentMultiPvData[pvIndex] = score;
@@ -240,7 +287,8 @@ function initEngine() {
                 } else {
                     mate = -m;
                 }
-                console.log("mate: "+mate)
+                currentEval=mate/Math.abs(mate)*100000
+                if (debug) console.log("mate: "+mate);
             } else {
                 mate = 0;
             }
@@ -274,15 +322,13 @@ function initEngine() {
                 processEvaluationQueue();
             } 
             else if (engineMode === "EVALUATING_USER") {
+
                 let userSquare = pendingBadgeSquare;
                 pendingBadgeSquare = null; 
                 let bestScore = currentMultiPvData[1] || 0;
+                let evalDiff = Math.abs(oldEval - currentEval);
 
-                if (game.turn() === "b" ? mate<=0 : mate>=0){
-                
-                    let evalDiff = Math.abs(oldEval - currentEval);
-
-
+                if (evalDiff>9000 || !(game.turn() === "b" ? mate>0 : mate<0)){
                     console.log("diff: "+evalDiff)
 
                     let badgeType = "good";
@@ -303,7 +349,6 @@ function initEngine() {
                     }
                 }
 
-                updateEvalBar();
                 drawBoard();
 
                 engineMode = "IDLE";
@@ -342,7 +387,7 @@ const piecesImages = {
 };
 
 const accuracyIcons = {
-    "Best Move": "★", "Excellent": "👍", "Good": "✓", "Inaccuracy": "?!", "Mistake": "?", "Blunder": "??"
+    "Best Move": "★", "Excellent": "👍", "Good": "✓", "Inaccuracy": "?!", "Mistake": "?", "Blunder": "??", "Checkmate": "#", "Draw": "½"
 };
 
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
@@ -532,7 +577,6 @@ function jumpToHistoryMove(index) {
     drawBoard();
     updateHistoryUI();
     triggerPassiveEvaluation();
-    updateEvalBar();
 }
 
 function pushMoveToHistory(moveObj, badgeData = null) {
@@ -550,9 +594,11 @@ function pushMoveToHistory(moveObj, badgeData = null) {
 }
 
 function drawBoard() {
+    checkGameEndFeedback();
     renderBoardHTML();
     renderPieces();
     setIndicator(`To Move: ${game.turn() === 'w' ? 'White' : 'Black'}`);
+    updateEvalBar();
 }
 
 function setIndicator(str){
@@ -630,21 +676,23 @@ function searchNextCandidate() {
     clearTimeout(engineWatchdog);
     engineWatchdog = setTimeout(() => {
         if (engineMode === "SEARCHING_PUZZLE") {
-            console.warn("⏱️ [WATCHDOG] Engine response timeout. Advancing thread to next position.");
+            console.warn("Unable to find puzzle in time, try reloading or use a better database!");
             searchNextCandidate();
         }
     }, 3500);
 
     const cleanFen = candidateGameFen.trim();
 
-    // 2. Clear state and append explicit newline tokens (\n) to force stdin stream flushing
+    if (typeof game !== 'undefined') {
+        game.load(cleanFen); 
+    }
+
     engineWorker.postMessage('stop');
     engineWorker.postMessage(`position fen ${cleanFen}`);
-    engineWorker.postMessage('go depth 6');
     
-    // 3. Signal synchronization state
     pendingSearchSync = true; 
-    engineWorker.postMessage('isready');
+    engineWorker.postMessage('isready'); 
+    engineWorker.postMessage('go depth 6');
 }
 
 function setupPuzzleBoard(gameData, historyToLoad, fen, initialScore) {
@@ -706,6 +754,7 @@ function handleLocalEngineReply(uciMove) {
 }
 
 async function handleSquareClick(squareName) {
+    
     if (game.game_over() || engineMode !== "IDLE") return; 
     if ((boardFlipped && game.turn() === 'w') || (!boardFlipped && game.turn() === 'b')) return;
 
@@ -792,12 +841,10 @@ function updateEvalBar() {
         // Keep your existing Mate (M) logic
         displayHtml = `M${Math.abs(mate)}`;
     } else {
-        // 🔥 NEW: Check if the value is large enough to drop the decimal
+        if (debug) console.log("eval: " + evalValue);
         if (Math.abs(evalValue) >= 10) {
-            // Show as integer (e.g., +12 or -15)
             displayHtml = Math.round(evalValue);
         } else {
-            // Show with one decimal (e.g., +1.3 or -0.4)
             displayHtml = evalValue.toFixed(1);
         }
         
@@ -816,7 +863,7 @@ function updateEvalBar() {
     fillElement.style.height = `${percentage}%`;
     textElement.textContent = displayHtml;
 
-    console.log("evalValue: "+evalValue+" | percentage: "+percentage)
+    if (debug) console.log("evalValue: "+evalValue+" | percentage: "+percentage)
 
     // Dynamic text color adjustment
     if (percentage > 50) {
@@ -850,7 +897,6 @@ function resetBoard() {
     updateHistoryUI();
     drawBoard();
     triggerPassiveEvaluation();
-    updateEvalBar();
 }
 
 // Database Synchronization Core
@@ -899,10 +945,65 @@ async function checkSavedDatabase() {
         }
     };
 }
+
+function exportCurrentPGN() {
+    // 1. Fetch headers or create fallbacks
+    const whitePlayer = (typeof candidateGameData !== 'undefined' && candidateGameData.white) ? candidateGameData.white : "White Player";
+    const blackPlayer = (typeof candidateGameData !== 'undefined' && candidateGameData.black) ? candidateGameData.black : "Black Player";
+    
+    // Get current date formatted as YYYY.MM.DD
+    const today = new Date().toISOString().split('T')[0].replace(/-/g, '.');
+
+    // 2. Build standard PGN headers
+    let pgnString = `[Event "Casual Game"]\n`;
+    pgnString += `[Site "Local Engine App"]\n`;
+    pgnString += `[Date "${today}"]\n`;
+    pgnString += `[White "${whitePlayer}"]\n`;
+    pgnString += `[Black "${blackPlayer}"]\n`;
+    
+    // Check game termination status for the Result header
+    let result = "*"; // Ongoing/unknown
+    if (typeof game.game_over === 'function' && game.game_over()) {
+        if (typeof game.in_checkmate === 'function' && game.in_checkmate()) {
+            // If it's white's turn, black won; if black's turn, white won
+            result = (game.turn() === 'w') ? "0-1" : "1-0";
+        } else {
+            result = "1/2-1/2"; // Draw/Stalemate/Repetition
+        }
+    }
+    pgnString += `[Result "${result}"]\n\n`;
+
+    // 3. Construct the move text layout
+    // game.history() returns an array of move strings like ['e4', 'e5', 'Nf3', ...]
+    const moveHistory = game.history();
+    let moveText = "";
+
+    for (let i = 0; i < moveHistory.length; i++) {
+        if (i % 2 === 0) {
+            const moveNumber = Math.floor(i / 2) + 1;
+            moveText += `${moveNumber}. ${moveHistory[i]} `;
+        } else {
+            moveText += `${moveHistory[i]} `;
+        }
+    }
+
+    // Append final game result token
+    pgnString += moveText + result;
+
+    // 4. Copy the completed string directly to clipboard
+    navigator.clipboard.writeText(pgnString)
+        .then(() => {
+            console.log("📋 PGN copied to clipboard successfully!");
+            // Optional: Trigger a temporary UI notification toast here
+            alert("PGN copied to clipboard!");
+        })
+        .catch(err => {
+            console.error("❌ Failed to copy PGN to clipboard: ", err);
+        });
+}
 checkSavedDatabase();
 
 window.resetBoard = resetBoard;
 window.loadNewPuzzle = findRandomPuzzle;
 updateHistoryUI();
 drawBoard();
-updateEvalBar();

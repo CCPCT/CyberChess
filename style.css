@@ -19,18 +19,18 @@ body {
     padding: 20px;
     box-sizing: border-box;
 }
+
+a {color: white;text-decoration: underline;}
+  a:hover {color: gray;text-decoration: underline;}
+  a:active {color: gray;text-decoration: underline;}
+  a:visited {color: white;text-decoration: underline;}
+    
+
+
 .meta-info { text-align: center; margin-bottom: 15px; min-height: 40px; }
 
 /* Main Workspace layout rules for Side-by-Side look */
-.workspace-container {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    align-items: flex-start;
-    justify-content: center;
-    max-width: 740px;
-    width: 100%;
-}
+
 @media (max-width: 700px) {
     .workspace-container {
         flex-direction: column;
@@ -104,11 +104,27 @@ body {
 .badge-inaccuracy { background-color: #FBC020; color: white; }
 .badge-mistake { background-color: #F48802; color: white; }
 .badge-blunder { background-color: #D12533; color: white; }
+.badge-checkmate { background-color: #302F2B; color: white; }
+.badge-draw { background-color: #F9F9F9; color: #010101; }
+
+.root {
+  /* Forces the div to take up the full browser window size */
+  width: 100vw;
+  height: 100vh;
+  
+  /* Ensures it stays in place even if the page content grows */
+  position: fixed;
+  top: 0;
+  left: 0;
+  
+  /* Optional: Prevents scrollbars if the content exceeds the screen */
+  overflow: auto; 
+}
 
 /* --- Move History Panel Custom Styling --- */
 .history-panel {
     width: 240px;
-    height: 468px;
+    height: 384px;
     background-color: #262421;
     border-radius: 6px;
     border: 1px solid #45423e;
