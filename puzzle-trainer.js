@@ -58,11 +58,11 @@ let puzzleSearchAttempts = 0;
 const MAX_SEARCH_ATTEMPTS = 100;
 
 const SOUNDS = {
-    move: new Audio('./sounds/move-self.mp3'),
-    capture: new Audio('./sounds/capture.mp3'),
-    check: new Audio('./sounds/move-check.mp3'),
-    promote: new Audio('./sounds/promote.mp3'),
-    castle: new Audio('./sounds/castle.mp3')
+    move: new Audio('./assets/sounds/move.mp3'),
+    capture: new Audio('./assets/sounds/capture.mp3'),
+    check: new Audio('./assets/sounds/check.mp3'),
+    promote: new Audio('./assets/sounds/promote.mp3'),
+    castle: new Audio('./assets/sounds/castle.mp3')
 };
 
 function playSound(type) {
@@ -378,12 +378,18 @@ function initEngine() {
 initEngine();
 
 const piecesImages = {
-    'p': 'https://www.chess.com/chess-themes/pieces/neo/150/bp.png', 'r': 'https://www.chess.com/chess-themes/pieces/neo/150/br.png',
-    'n': 'https://www.chess.com/chess-themes/pieces/neo/150/bn.png', 'b': 'https://www.chess.com/chess-themes/pieces/neo/150/bb.png',
-    'q': 'https://www.chess.com/chess-themes/pieces/neo/150/bq.png', 'k': 'https://www.chess.com/chess-themes/pieces/neo/150/bk.png',
-    'P': 'https://www.chess.com/chess-themes/pieces/neo/150/wp.png', 'R': 'https://www.chess.com/chess-themes/pieces/neo/150/wr.png',
-    'N': 'https://www.chess.com/chess-themes/pieces/neo/150/wn.png', 'B': 'https://www.chess.com/chess-themes/pieces/neo/150/wb.png',
-    'Q': 'https://www.chess.com/chess-themes/pieces/neo/150/wq.png', 'K': 'https://www.chess.com/chess-themes/pieces/neo/150/wk.png'
+    'p': './assets/pieces/black-pawn.png',
+    'r': './assets/pieces/black-rook.png',
+    'n': './assets/pieces/black-knight.png',
+    'b': './assets/pieces/black-bishop.png',
+    'q': './assets/pieces/black-queen.png',
+    'k': './assets/pieces/black-king.png',
+    'P': './assets/pieces/white-pawn.png',
+    'R': './assets/pieces/white-rook.png',
+    'N': './assets/pieces/white-knight.png',
+    'B': './assets/pieces/white-bishop.png',
+    'Q': './assets/pieces/white-queen.png',
+    'K': './assets/pieces/white-king.png'
 };
 
 const accuracyIcons = {
@@ -836,25 +842,36 @@ function updateEvalBar() {
 
     let displayHtml = "";
     let evalValue = scoreInCentipawns / 100;
+    let cappedEval = 0;
 
-    if (mate!=0) {
-        // Keep your existing Mate (M) logic
-        displayHtml = `M${Math.abs(mate)}`;
-    } else {
-        if (debug) console.log("eval: " + evalValue);
-        if (Math.abs(evalValue) >= 10) {
-            displayHtml = Math.round(evalValue);
+    if (game.in_checkmate()){
+        displayHtml = "gg"
+        if (game.turn()==='w'){
+            cappedEval = -5.0;
         } else {
-            displayHtml = evalValue.toFixed(1);
+            cappedEval = 5.0;
         }
-        
-        if (Math.abs(evalValue) < 0.1) displayHtml = "0.0";
-    }
+    } else if (game.in_draw()){
+        displayHtml = "Draw"
+    } else {
+        if (mate!=0) {
+            displayHtml = `M${Math.abs(mate)}`;
+        } else {
+            if (debug) console.log("eval: " + evalValue);
+            if (Math.abs(evalValue) >= 10) {
+                displayHtml = Math.round(evalValue);
+            } else {
+                displayHtml = evalValue.toFixed(1);
+            }
+            
+            if (Math.abs(evalValue) < 0.1) displayHtml = "0.0";
+        }
 
-    // Rest of your visual calculation logic stays exactly the same...
-    let cappedEval = Math.max(-4.5, Math.min(4.5, evalValue));
-    if (mate) {
-        cappedEval = mate > 0 ? -5 : 5; // Max out height if mate
+        // Rest of your visual calculation logic stays exactly the same...
+        let cappedEval = Math.max(-4.5, Math.min(4.5, evalValue));
+        if (mate) {
+            cappedEval = mate > 0 ? -5 : 5; // Max out height if mate
+        }
     }
 
     let percentage = ((cappedEval + 5) / 10) * 100;
