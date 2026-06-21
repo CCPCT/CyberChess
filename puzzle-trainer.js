@@ -329,7 +329,7 @@ function initEngine() {
                 let evalDiff = Math.abs(oldEval - currentEval);
 
                 if (evalDiff>9000 || !(game.turn() === "b" ? mate>0 : mate<0)){
-                    console.log("diff: "+evalDiff)
+                    if (debug) console.log("diff: "+evalDiff)
 
                     let badgeType = "good";
                     let icon = accuracyIcons["Good"];
@@ -341,7 +341,7 @@ function initEngine() {
                     else if (evalDiff <= 300) { badgeType = "mistake"; icon = accuracyIcons["Mistake"]; }
                     else { badgeType = "blunder"; icon = accuracyIcons["Blunder"]; }
 
-                    console.log("[Move Feedback] " + badgeType)
+                    if (debug) console.log("[Move Feedback] " + badgeType)
 
                     squareBadge = { square: userSquare, icon: icon, type: badgeType };
                     if (historyState[currentHistoryIndex]) {
