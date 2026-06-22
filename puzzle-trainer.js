@@ -853,26 +853,22 @@ function updateEvalBar() {
         }
     } else if (game.in_draw()){
         displayHtml = "Draw"
+    } else if (mate!=0) {
+        displayHtml = `M${Math.abs(mate)}`;
+        cappedEval = mate > 0 ? -5 : 5;
     } else {
-        if (mate!=0) {
-            displayHtml = `M${Math.abs(mate)}`;
+        if (debug) console.log("eval: " + evalValue);
+        if (Math.abs(evalValue) >= 10) {
+            displayHtml = Math.round(evalValue);
         } else {
-            if (debug) console.log("eval: " + evalValue);
-            if (Math.abs(evalValue) >= 10) {
-                displayHtml = Math.round(evalValue);
-            } else {
-                displayHtml = evalValue.toFixed(1);
-            }
-            
-            if (Math.abs(evalValue) < 0.1) displayHtml = "0.0";
+            displayHtml = evalValue.toFixed(1);
         }
-
-        // Rest of your visual calculation logic stays exactly the same...
-        let cappedEval = Math.max(-4.5, Math.min(4.5, evalValue));
-        if (mate) {
-            cappedEval = mate > 0 ? -5 : 5; // Max out height if mate
-        }
+        
+        if (Math.abs(evalValue) < 0.1) displayHtml = "0.0";
+        cappedEval = Math.max(-4.5, Math.min(4.5, evalValue));
     }
+
+    
 
     let percentage = ((cappedEval + 5) / 10) * 100;
     //if (boardFlipped) percentage = 100 - percentage;
