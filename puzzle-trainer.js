@@ -328,7 +328,7 @@ function initEngine() {
                 let bestScore = currentMultiPvData[1] || 0;
                 let evalDiff = Math.abs(oldEval - currentEval);
 
-                if (evalDiff>9000 || !(game.turn() === "b" ? mate>0 : mate<0)){
+                if (evalDiff>9000 || (game.turn() === "b" ? mate<=0 : mate>=0)){
                     if (debug) console.log("diff: "+evalDiff)
 
                     let badgeType = "good";
@@ -434,7 +434,7 @@ async function handleDatabaseUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    document.getElementById('game-title').textContent = "Parsing database file...";
+    setGameTitle("Parsing database file...");
     const reader = new FileReader();
     
     reader.onload = async function(e) {
@@ -459,7 +459,9 @@ async function handleDatabaseUpload(event) {
             };
         }
 
-        findRandomPuzzle();
+        setGameTitle("Valid database: play a move or press next puzzle");
+
+        // findRandomPuzzle();
     };
     reader.readAsText(file);
 }
@@ -645,7 +647,7 @@ function searchNextCandidate() {
     if (puzzleSearchAttempts > MAX_SEARCH_ATTEMPTS) {
         console.error("❌ [STOPPED] Range scan threshold breached.");
         setGameTitle("No balanced positions found. Try a different PGN database.");
-        document.getElementById('game-title').textContent = "No balanced positions identified. Try another dataset.";
+        setGameTitle("No balanced positions identified. Try another dataset.");
         engineMode = "IDLE";
         return;
     }
@@ -698,7 +700,7 @@ function searchNextCandidate() {
     
     pendingSearchSync = true; 
     engineWorker.postMessage('isready'); 
-    engineWorker.postMessage('go depth 6');
+    engineWorker.postMessage('go depth 10');
 }
 
 function setupPuzzleBoard(gameData, historyToLoad, fen, initialScore) {
@@ -709,7 +711,7 @@ function setupPuzzleBoard(gameData, historyToLoad, fen, initialScore) {
     engineMode = "IDLE";
     whitePlayerName = gameData.white || "White";
     blackPlayerName = gameData.black || "Black";
-    document.getElementById('game-title').textContent = `${whitePlayerName} vs ${blackPlayerName}`;
+    setGameTitle(`${whitePlayerName} vs ${blackPlayerName}`);
 
     game.reset(); 
     historyState = [];
@@ -949,8 +951,8 @@ async function checkSavedDatabase() {
         if (cachedData && cachedData.length > 0) {
             localPuzzleDatabase = cachedData.map(item => item.gameData);
             console.log(`🔥 [IndexedDB] Cache Hit! Automatically loaded ${localPuzzleDatabase.length} games from storage.`);
-            setGameTitle("Generating puzzle...");
-            findRandomPuzzle();
+            setGameTitle("Valid cached database: play a move or press next puzzle");
+            // findRandomPuzzle();
         } else {
             setGameTitle("Use [Load Database] to load puzzle source");
             setIndicator("recommanded source: [https://database.nikonoel.fr/]")
@@ -1014,6 +1016,7 @@ function exportCurrentPGN() {
             console.error("❌ Failed to copy PGN to clipboard: ", err);
         });
 }
+
 checkSavedDatabase();
 
 window.resetBoard = resetBoard;
