@@ -10,3 +10,20 @@
 - export pgn to analysis on another tool
 
 ![showcase](showcase.png)
+
+---
+
+### todo
+- settings tab
+- more settings e.g. board colour, hide eval bar, hide move feedback...
+
+---
+
+### Assets
+
+| Assets | Source |
+| -------- | -------- |
+| chess engine | stockfish 18 lite single thread wasm |
+| chess pieces | [Green Chess](https://greenchess.net/) |
+| move feedback icon| unicode characters |
+| website icon | Vast Peak |
